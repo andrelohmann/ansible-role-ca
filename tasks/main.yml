@@ -1,0 +1,40 @@
+---
+
+- name: CA | Install required packages
+  ansible.builtin.apt:
+    name: "{{ packages }}"
+    state: present
+    dpkg_options: 'force-confnew,force-confdef'
+    autoclean: true
+    autoremove: true
+    update_cache: true
+  vars:
+    packages:
+    - python3-cryptography
+    - openssl
+
+# https://docs.ansible.com/ansible/latest/collections/community/crypto/docsite/guide_ownca.html
+
+- name: CA | Create /opt/ca
+  ansible.builtin.file:
+    path: "/opt/ca"
+    state: directory
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: CA | Create root CA
+  ansible.builtin.include_tasks: root_ca.yml
+
+- name: CA | Create Intermediate CA
+  ansible.builtin.include_tasks: intermediate_ca.yml
+
+- name: CA | Install CA to the system
+  ansible.builtin.include_tasks: install_ca.yml
+  when: ca_install
+
+- name: CA | Create intermediate signed certificates
+  ansible.builtin.include_tasks: create_certificates.yml
+  when: ca_certificates | length > 0
+
+...

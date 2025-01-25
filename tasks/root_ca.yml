@@ -1,0 +1,90 @@
+---
+
+- name: CA | Create /opt/ca/root
+  ansible.builtin.file:
+    path: "/opt/ca/root"
+    state: directory
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: CA | Create the root_ca private key with password protection
+  # Single OpenSSL commands to create and password encrypt the key
+  # openssl ecparam -name secp384r1 -genkey -noout -out root_ca.key <- generate a ECDSA-384 Key
+  # openssl ec -aes256 -in root_ca.key -out root_ca.key -passout pass:{{ step_ca_root_key_pass }} <- password encrypt the key
+  community.crypto.openssl_privatekey:
+    path: "/opt/ca/root/root_ca.key"
+    passphrase: "{{ ca_root_key_pass }}"
+    # ECDSA-384
+    type: ECC
+    curve: secp384r1
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: CA | Check whether root csr exists
+  ansible.builtin.stat:
+    path: "/opt/ca/root/root_ca.csr"
+  register: root_csr_exists
+
+- name: CA | Create the root_ca certificate signing request (CSR) for CA certificate
+  # Single OpenSSL commands to create the CSR
+  # openssl req -new -key root_ca.key -out root_ca.csr -subj "/C=DE/ST=__STATE__/L=__LOCALITY__/O=__ORGANISATION__/OU=__ORGANISATIONA_UNIT__/CN=__CA_NAME__/emailAddress=__EMAIL__" -passin pass:{{ step_ca_root_key_pass }} <- generate the csr
+  # openssl req -in root_ca.csr -noout -text <- watch the csr in clear text
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: "/opt/ca/root/root_ca.key"
+    privatekey_passphrase: "{{ ca_root_key_pass }}"
+    common_name: "{{ ca_root_cert_cn }}"
+    country_name: "{{ ca_cert_country }}"
+    email_address: "{{ ca_cert_email }}"
+    organization_name: "{{ ca_cert_org }}"
+    organizational_unit_name: "{{ ca_cert_ou }}"
+    state_or_province_name: "{{ ca_cert_state }}"
+    locality_name: "{{ ca_cert_locality }}"
+    use_common_name_for_san: false  # since we do not specify SANs, don't use CN as a SAN
+    basic_constraints:  # Our certificate is a CA
+    - 'CA:TRUE'
+    basic_constraints_critical: true
+    key_usage:
+    - keyCertSign
+    - cRLSign
+    key_usage_critical: true
+  register: root_ca_csr
+  when: not root_csr_exists.stat.exists
+
+- name: CA | Store CSR
+  ansible.builtin.copy:
+    dest: "/opt/ca/root/root_ca.csr"
+    content: "{{ root_ca_csr.csr }}"
+    mode: '0600'
+    owner: root
+    group: root
+  when: not root_csr_exists.stat.exists and root_ca_csr is changed
+
+- name: CA | Create self-signed CA certificate from CSR
+  # OpenSSL command to create the CA crt
+  # openssl x509 -req -in root_ca.csr -signkey root_ca.key -days 3650 -out root_ca.crt -extfile <(cat <<EOF
+  # [v3_ca]
+  # basicConstraints=critical,CA:true
+  # keyUsage=critical,keyCertSign,cRLSign
+  # EOF
+  # ) <- create the crt
+  # openssl x509 -in root_ca.crt -noout -text <- watch the crt in clear text
+  community.crypto.x509_certificate:
+    path: "/opt/ca/root/root_ca.crt"
+    csr_path: "/opt/ca/root/root_ca.csr"
+    # csr_content: "{{ root_ca_csr.csr }}"
+    privatekey_path: "/opt/ca/root/root_ca.key"
+    privatekey_passphrase: "{{ ca_root_key_pass }}"
+    provider: selfsigned
+    selfsigned_not_after: "+{{ ca_root_validity }}d"  # valid for step_ca_root_validity days
+    selfsigned_not_before: "-1d"  # valid since yesterday
+  register: root_ca_crt
+
+- name: CA | Convert PEM to DER using OpenSSL
+  ansible.builtin.command: >
+    openssl x509 -in /opt/ca/root/root_ca.crt -out /opt/ca/root/root_ca.der -outform DER
+  args:
+    creates: /opt/ca/root/root_ca.der
+
+...

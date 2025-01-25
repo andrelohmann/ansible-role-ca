@@ -1,0 +1,36 @@
+---
+# This is an example playbook to execute Ansible tests.
+
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+
+  - name: Check that the root_ca.crt file exists
+    ansible.builtin.stat:
+      path: /opt/ca/root/root_ca.crt
+    register: root_ca_stat_result
+
+  - name: Assert the root_ca.crt file exists
+    ansible.builtin.assert:
+      that: root_ca_stat_result.stat.exists
+
+  - name: Check that the intermediate_ca.crt file exists
+    ansible.builtin.stat:
+      path: /opt/ca/intermediate/intermediate_ca.crt
+    register: intermediate_ca_stat_result
+
+  - name: Assert the intermediate_ca.crt file exists
+    ansible.builtin.assert:
+      that: intermediate_ca_stat_result.stat.exists
+
+  - name: Check that the test.ca.lan.crt file exists
+    ansible.builtin.stat:
+      path: /opt/ca/certificates/test.ca.lan/test.ca.lan.crt
+    register: test_ca_stat_result
+
+  - name: Assert the test.ca.lan.crt file exists
+    ansible.builtin.assert:
+      that: test_ca_stat_result.stat.exists
+
+...

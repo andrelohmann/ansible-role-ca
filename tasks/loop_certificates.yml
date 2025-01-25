@@ -1,0 +1,77 @@
+---
+
+- name: CA | Create /opt/ca/certificates/{{ item.domain }}
+  ansible.builtin.file:
+    path: "/opt/ca/certificates/{{ item.domain }}"
+    state: "{{ (item.state == 'present') | ternary('directory', 'absent') }}"
+    owner: "{{ (item.state == 'present') | ternary('root', omit) }}"
+    group: "{{ (item.state == 'present') | ternary('root', omit) }}"
+    mode: "{{ (item.state == 'present') | ternary('0700', omit) }}"
+
+- name: CA | Create the certificate if state is present
+  when: item.state == 'present'
+  block:
+
+  - name: CA | Generate private key for each end-entity cert
+    community.crypto.openssl_privatekey:
+      path: "/opt/ca/certificates/{{ item.domain }}/{{ item.domain }}.key"
+      type: ECC
+      curve: secp384r1
+      mode: '0600'
+      owner: root
+      group: root
+
+  - name: CA | Check if CSR already exists
+    ansible.builtin.stat:
+      path: "/opt/ca/certificates/{{ item.domain }}/{{ item.domain }}.csr"
+    register: endentity_csr_stat
+
+  - name: CA | Create CSR for each end-entity (with SANs if alt_names present)
+    community.crypto.openssl_csr_pipe:
+      privatekey_path: "/opt/ca/certificates/{{ item.domain }}/{{ item.domain }}.key"
+      common_name: "{{ item.domain }}"
+      # E.g., key usage for server certs
+      key_usage:
+      - digitalSignature
+      - keyEncipherment
+      key_usage_critical: true
+      # Convert alt_names to the form [ 'DNS:foo', 'DNS:bar' ] if present
+      subject_alt_name: "{{ (item.alt_names is defined and (item.alt_names | length) > 0) | ternary('DNS:' ~ (item.alt_names | join(',DNS:')), omit) }}"
+    register: endentity_csr_result
+    when: not endentity_csr_stat.stat.exists
+
+  - name: CA | Store end-entity CSR file
+    ansible.builtin.copy:
+      dest: "/opt/ca/certificates/{{ item.domain }}/{{ item.domain }}.csr"
+      content: "{{ endentity_csr_result.csr }}"
+      mode: '0600'
+      owner: root
+      group: root
+    when:
+    - not endentity_csr_stat.stat.exists
+    - endentity_csr_result.changed
+
+  - name: CA | Sign each end-entity cert with the Intermediate CA (includes SAN from CSR)
+    community.crypto.x509_certificate:
+      path: "/opt/ca/certificates/{{ item.domain }}/{{ item.domain }}.crt"
+      csr_path: "/opt/ca/certificates/{{ item.domain }}/{{ item.domain }}.csr"
+      provider: ownca
+      ownca_path: "/opt/ca/intermediate/intermediate_ca.crt"
+      ownca_privatekey_path: "/opt/ca/intermediate/intermediate_ca.key"
+      # ownca_privatekey_passphrase: "YOUR_INTERMEDIATE_PASS" if needed
+      ownca_not_after: "+{{ item.validity_days }}d"
+      ownca_not_before: "-1d"
+      mode: '0600'
+      owner: root
+      group: root
+
+  - name: CA | Convert PEM to DER (optional)
+    ansible.builtin.command: >
+      openssl x509
+      -in /opt/ca/certificates/{{ item.domain }}/{{ item.domain }}.crt
+      -out /opt/ca/certificates/{{ item.domain }}/{{ item.domain }}.der
+      -outform DER
+    args:
+      creates: "/opt/ca/certificates/{{ item.domain }}/{{ item.domain }}.der"
+
+...

@@ -1,0 +1,14 @@
+---
+
+- name: CA | Update ca-certificates
+  ansible.builtin.shell: |
+    update-ca-certificates && update-ca-certificates -f
+  args:
+    executable: /bin/bash
+  register: ca_update
+  # changed_when steuert, ob dieser Handler einen "changed"-Status anzeigt.
+  # Hier nur als Beispiel:
+  changed_when: >
+    ca_update.stdout is not match("0 added, 0 removed; done.")
+
+...

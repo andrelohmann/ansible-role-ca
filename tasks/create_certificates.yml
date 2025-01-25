@@ -1,0 +1,17 @@
+---
+
+- name: CA | Create /opt/ca/certificates
+  ansible.builtin.file:
+    path: "/opt/ca/certificates"
+    state: directory
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: CA | Loop over all Certificates
+  ansible.builtin.include_tasks: loop_certificates.yml
+  loop: "{{ ca_certificates }}"
+  loop_control:
+    label: "{{ item.domain }}"
+
+...

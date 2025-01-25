@@ -1,0 +1,49 @@
+---
+- hosts: all
+  become: true
+  become_method: sudo
+
+  vars:
+    ca_domain: ca.lan
+    ca_root_key_pass: ASDFJKL0e
+    ca_root_cert_cn: "Root CA"
+    # ca_root_validity: 3652
+    ca_intermediate_cert_cn: "Intermediate CA"
+    # ca_issuer_validity: 1826
+    ca_cert_country: DE
+    ca_cert_email: "admin@ca.lan"
+    ca_cert_org: "Your Company"
+    ca_cert_state: "Your State"
+    ca_cert_locality: "Your City"
+    ca_cert_ou: "Your OU"
+
+    ca_certificates:
+    - domain: "ca.lan"
+      alt_names: []
+      state: present
+      validity_days: 365
+    - domain: "test.ca.lan"
+      alt_names: []
+      state: present
+      validity_days: 365
+    - domain: "mail.ca.lan"
+      alt_names:
+      - smtp.ca.lan
+      state: present
+      validity_days: 365
+
+  pre_tasks:
+  - name: check for file custom_vars.yml
+    ansible.builtin.stat:
+      path: custom_vars.yml
+    register: stat_custom_vars
+  - name: load custom vars, if existent
+    ansible.builtin.include_vars:
+      file: custom_vars.yml
+    when: stat_custom_vars.stat.exists
+
+  roles:
+  - andrelohmann.root_colored_prompt
+  - ansible-role-ca
+
+...
