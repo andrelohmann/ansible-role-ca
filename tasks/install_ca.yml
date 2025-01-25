@@ -1,0 +1,33 @@
+---
+
+- name: CA | Install ca-certificates
+  ansible.builtin.apt:
+    name: "{{ packages }}"
+    state: present
+    dpkg_options: 'force-confnew,force-confdef'
+    autoclean: true
+    autoremove: true
+    update_cache: true
+  vars:
+    packages:
+    - ca-certificates
+
+- name: CA | Create /usr/local/share/ca-certificates/{{ ca_domain }}
+  ansible.builtin.file:
+    path: "/usr/local/share/ca-certificates/{{ ca_domain }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: CA | Copy ca
+  ansible.builtin.copy:
+    src: /opt/ca/root/root_ca.crt
+    dest: "/usr/local/share/ca-certificates/{{ ca_domain }}/root_ca.crt"
+    owner: root
+    group: root
+    mode: 0644
+    remote_src: true
+  notify: "CA | Update ca-certificates"
+
+...

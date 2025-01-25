@@ -1,0 +1,24 @@
+---
+
+# ca_domain: __CA_DOMAIN__
+# ca_root_key_pass: __ROOT_CA_KEY_PASSWORD__
+# ca_root_cert_cn:
+# ca_intermediate_cert_cn:
+# ca_cert_country:
+# ca_cert_email:
+# ca_cert_org:
+# ca_cert_ou:
+# ca_cert_state:
+# ca_cert_locality:
+ca_root_validity: 3652  # in days
+ca_intermediate_validity: 1826  # in days
+# install the root ca to the system
+ca_install: true
+# add and sign additional certificates
+ca_certificates: []
+# - domain: "{{ ca_domain }}"
+#   alt_names: []
+#   state: present
+#   validity_days: 365
+
+...
