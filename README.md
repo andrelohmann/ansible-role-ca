@@ -12,21 +12,28 @@ This role requires ubuntu.
 
 ### Role Variables
 
-The default set of variables defines the gitlab installation and needs at best to be overwritten in group_vars/host_vars. You should be comfortable with the gitlab.rb config file and set the required configurations properly in the gitlab_config variable. Have a clear look at the list items. They reflect the different styles of config parameters appearing in gitlab.rb (four different styles in total). Also don't get confused by single quotes in double quotes. Some values need to be written to the gitlab.rb file as the pure value (e.g. true), while others need to be written encapsulated in string markers (single quotes).
+These are the default variables to set for managing the root and the intermediate CA. The root CA key will be protected by a password.
 
+    # main domain
     ca_domain: ca.lan
+    # root ca key password
     ca_root_key_pass: ASDFJKL0e
+    # root ca common name
     ca_root_cert_cn: "Root CA"
     # ca_root_validity: 3652
+    # intermediate ca common name
     ca_intermediate_cert_cn: "Intermediate CA"
     # ca_issuer_validity: 1826
+    # certificate subjects
     ca_cert_country: DE
     ca_cert_email: "admin@ca.lan"
     ca_cert_org: "Your Company"
     ca_cert_state: "Your State"
     ca_cert_locality: "Your City"
     ca_cert_ou: "Your OU"
-
+    # install the ca to the system
+    ca_install: true
+    # Add and sign additional certificates
     ca_certificates:
     - domain: "ca.lan"
       alt_names: []
@@ -41,13 +48,6 @@ The default set of variables defines the gitlab installation and needs at best t
       - smtp.ca.lan
       state: present
       validity_days: 365
-
-The following mandatory item needs to be set in gitlab_config.
-
-    gitlab_config:
-    # Set the URL
-    - namespace: external_url
-      value: "'http://gitlab.example.com'"
 
 ### Example Playbook
 
