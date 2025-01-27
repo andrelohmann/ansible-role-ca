@@ -26,7 +26,7 @@
     dest: "/usr/local/share/ca-certificates/{{ ca_domain }}/root_ca.crt"
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
     remote_src: true
   notify: "CA | Update ca-certificates"
 
