@@ -2,7 +2,7 @@
 - name: Converge
   hosts: all
   become: true
-  become_method: sudo
+  become_method: ansible.builtin.sudo
   vars:
     ca_domain: ca.lan
     ca_root_key_pass: ASDFJKL0e
@@ -32,7 +32,7 @@
       state: present
       validity_days: 365
   tasks:
-  - name: "Include andrelohmann.ca"
-    include_role:
+  - name: Include andrelohmann.ca
+    ansible.builtin.include_role:
       name: "andrelohmann.ca"
 ...
