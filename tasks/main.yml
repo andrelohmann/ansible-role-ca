@@ -28,6 +28,9 @@
 
 - name: CA | Create Intermediate CA
   ansible.builtin.include_tasks: intermediate_ca.yml
+  loop: "{{ ca_intermediates }}"
+  loop_control:
+    loop_var: item
 
 - name: CA | Install CA to the system
   ansible.builtin.include_tasks: install_ca.yml
