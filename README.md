@@ -12,7 +12,7 @@ This role requires ubuntu.
 
 ### Role Variables
 
-These are the default variables to set for managing the root and the intermediate CA. The root CA key will be protected by a password.
+These are the default variables to set for managing the root and the intermediate CAs. The root CA key will be protected by a password.
 
     # main domain
     ca_domain: ca.lan
@@ -21,18 +21,32 @@ These are the default variables to set for managing the root and the intermediat
     # root ca common name
     ca_root_cert_cn: "Root CA"
     # ca_root_validity: 3652
-    # intermediate ca common name
-    ca_intermediate_cert_cn: "Intermediate CA"
-    # ca_issuer_validity: 1826
-    # certificate subjects
     ca_cert_country: DE
     ca_cert_email: "admin@ca.lan"
     ca_cert_org: "Your Company"
     ca_cert_state: "Your State"
     ca_cert_locality: "Your City"
     ca_cert_ou: "Your OU"
+
     # install the ca to the system
     ca_install: true
+    
+    # ca_intermediate_default_validity: 1826
+
+    # Add and sign additional intermediate CAs
+    ca_intermediates:
+    - name: intermediate
+      cn: "Intermediate CA"
+      validity: 1826
+      country: DE
+      email: "admin@ca.lan"
+      org: "Your Company"
+      state: "Your State"
+      locality: "Your City"
+      ou: "Your OU"
+    - name: intermediate2
+      cn: "Intermediate CA 2"
+
     # Add and sign additional certificates
     ca_certificates:
     - domain: "ca.lan"
