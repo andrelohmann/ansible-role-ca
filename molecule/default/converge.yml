@@ -17,7 +17,7 @@
 
     # install the ca to the system
     ca_install: true
-    
+
     # ca_intermediate_default_validity: 1826
 
     ca_intermediates:
